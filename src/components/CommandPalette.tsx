@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Question {
   question: string;
   answers: string[];
-  correct: string;
+  correct: string[];
 }
 
 interface CommandPaletteProps {

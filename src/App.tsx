@@ -19,17 +19,17 @@ import { questionCache } from "./utils/questionCache";
 interface Question {
   question: string;
   answers: string[];
-  correct: string;
+  correct: string[];
 }
 
 function App() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>("");
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [wrongAnswers, setWrongAnswers] = useState<Array<[Question, string]>>(
+  const [wrongAnswers, setWrongAnswers] = useState<Array<[Question, string[]]>>(
     []
   );
   const [showReview, setShowReview] = useState(false);
@@ -155,35 +155,41 @@ function App() {
 
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
-      setSelectedAnswer(answer);
+      setSelectedAnswers(prev => 
+        prev.includes(answer) 
+          ? prev.filter(a => a !== answer)
+          : [...prev, answer]
+      );
     }
   };
 
   const isCorrectAnswer = (
-    answer: string,
+    answers: string[],
     question: Question
   ): boolean => {
     if (question.answers.length === 0) {
       // For text input questions
-      return answer.toLowerCase() === question.correct.toLowerCase();
+      return question.correct.some(c => answers.some(a => c.toLowerCase() === a.toLowerCase()));
     }
 
-    // For True/False questions - direct comparison
-    return answer === question.correct;
+    // For multiple choice questions
+    if (answers.length !== question.correct.length) return false;
+    return question.correct.every(c => answers.includes(c));
   };
 
   const handleSubmit = async () => {
-    if ((!selectedAnswer && !textAnswer) || isAnswerSubmitted) return;
+    if ((selectedAnswers.length === 0 && !textAnswer) || isAnswerSubmitted) return;
 
     setIsAnswerSubmitted(true);
 
     if (!answeredQuestions.has(currentQuestionIndex)) {
-      if (isCorrectAnswer(selectedAnswer, currentQuestion)) {
+      const answersToCheck = currentQuestion.answers.length === 0 ? [textAnswer] : selectedAnswers;
+      if (isCorrectAnswer(answersToCheck, currentQuestion)) {
         setScore((prev) => prev + 1);
       } else {
         setWrongAnswers((prev) => [
           ...prev,
-          [currentQuestion, selectedAnswer],
+          [currentQuestion, answersToCheck],
         ]);
       }
       setAnsweredQuestions((prev) => new Set(prev).add(currentQuestionIndex));
@@ -200,7 +206,7 @@ function App() {
     if (currentQuestionIndex < maxQuestions - 1) {
       setDirection(1);
       setCurrentQuestionIndex((prev) => prev + 1);
-      setSelectedAnswer("");
+      setSelectedAnswers([]);
       setTextAnswer("");
       setIsAnswerSubmitted(false);
     } else {
@@ -212,7 +218,7 @@ function App() {
     if (currentQuestionIndex > 0) {
       setDirection(-1);
       setCurrentQuestionIndex((prev) => prev - 1);
-      setSelectedAnswer("");
+      setSelectedAnswers([]);
       setIsAnswerSubmitted(false);
     }
   };
@@ -242,7 +248,7 @@ function App() {
             handleNext();
                       } else if (
               (currentQuestion.answers.length > 0 &&
-                selectedAnswer) ||
+                selectedAnswers.length > 0) ||
               (currentQuestion.answers.length === 0 && textAnswer.length > 0)
             ) {
             handleSubmit();
@@ -314,7 +320,7 @@ function App() {
     currentQuestion,
     focusedAnswerIndex,
     isAnswerSubmitted,
-    selectedAnswer,
+    selectedAnswers,
     textAnswer,
   ]);
 
@@ -370,7 +376,7 @@ function App() {
     setWrongAnswers([]);
     setShowReview(false);
     setGameOver(false);
-    setSelectedAnswer("");
+    setSelectedAnswers([]);
     setTextAnswer("");
     setIsAnswerSubmitted(false);
     setFocusedAnswerIndex(-1);
@@ -429,7 +435,7 @@ function App() {
       setPreviousQuestionIndex(currentQuestionIndex);
     }
     setCurrentQuestionIndex(index);
-    setSelectedAnswer("");
+    setSelectedAnswers([]);
     setTextAnswer("");
     setIsAnswerSubmitted(false);
     setIsViewMode(true);
@@ -484,7 +490,7 @@ function App() {
             </div>
 
             <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-              {wrongAnswers.map(([question, userAnswer], index) => (
+              {wrongAnswers.map(([question, userAnswers], index) => (
                 <div key={index} className="p-4 rounded-[14px] bg-[var(--ios-background)] border border-[var(--ios-border)]">
                   <h3 className="text-[17px] font-medium mb-4">{question.question}</h3>
                   
@@ -493,9 +499,9 @@ function App() {
                       <div
                         key={answerIndex}
                         className={`p-3 rounded-[10px] text-[15px] ${
-                          answer === question.correct
+                          question.correct.includes(answer)
                             ? "bg-[var(--ios-green-light)] text-[var(--ios-green)] border border-[var(--ios-green)]"
-                            : answer === userAnswer
+                            : userAnswers.includes(answer)
                             ? "bg-[var(--ios-red-light)] text-[var(--ios-red)] border border-[var(--ios-red)]"
                             : "bg-[var(--ios-card-background)]"
                         }`}
@@ -504,10 +510,10 @@ function App() {
                           {String.fromCharCode(97 + answerIndex)})
                         </span>{" "}
                         {answer}
-                        {answer === question.correct && (
+                        {question.correct.includes(answer) && (
                           <span className="ml-2 text-[13px] font-medium">✓ Correct</span>
                         )}
-                        {answer === userAnswer && answer !== question.correct && (
+                        {userAnswers.includes(answer) && !question.correct.includes(answer) && (
                           <span className="ml-2 text-[13px] font-medium">✗ Your Answer</span>
                         )}
                       </div>
@@ -681,19 +687,19 @@ function App() {
                       disabled={isAnswerSubmitted}
                       className={`w-full text-left py-3.5 px-5 rounded-[14px] text-[17px] transition-all outline-none
                         ${
-                          selectedAnswer === answer &&
+                          selectedAnswers.includes(answer) &&
                           !isAnswerSubmitted
                             ? "bg-[var(--ios-blue-light)] text-[var(--ios-blue)]"
                             : "bg-[var(--ios-background)]"
                         } ${
                         isAnswerSubmitted &&
-                        isCorrectAnswer(answer, currentQuestion)
+                        currentQuestion.correct.includes(answer)
                           ? "bg-[var(--ios-green-light)] text-[var(--ios-green)]"
                           : ""
                       } ${
                         isAnswerSubmitted &&
-                        selectedAnswer === answer &&
-                        !isCorrectAnswer(answer, currentQuestion)
+                        selectedAnswers.includes(answer) &&
+                        !currentQuestion.correct.includes(answer)
                           ? "bg-[var(--ios-red-light)] text-[var(--ios-red)]"
                           : ""
                       } ${
@@ -736,10 +742,10 @@ function App() {
                   {!isAnswerSubmitted ? (
                     <button
                       onClick={handleSubmit}
-                      disabled={!selectedAnswer}
+                      disabled={selectedAnswers.length === 0}
                       className={`px-7 py-2.5 rounded-[14px] text-[17px] transition-all
                         ${
-                          !selectedAnswer
+                          selectedAnswers.length === 0
                             ? "bg-[var(--ios-background)] text-[var(--ios-text-secondary)]"
                             : "bg-[var(--ios-blue-light)] text-[var(--ios-blue)]"
                         }`}

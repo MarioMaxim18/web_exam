@@ -3,7 +3,7 @@ import { openDB, IDBPDatabase } from "idb";
 interface Question {
   question: string;
   answers: string[];
-  correct: string;
+  correct: string[];
 }
 
 interface QuestionCache {
@@ -14,7 +14,7 @@ interface QuestionCache {
 
 const DB_NAME = "question-cache";
 const STORE_NAME = "questions";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 class QuestionCacheManager {
@@ -22,8 +22,11 @@ class QuestionCacheManager {
 
   async init() {
     this.db = await openDB(DB_NAME, CACHE_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: "id" });
+        } else if (oldVersion < 2) {
+          db.deleteObjectStore(STORE_NAME);
           db.createObjectStore(STORE_NAME, { keyPath: "id" });
         }
       },

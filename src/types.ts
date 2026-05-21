@@ -1,7 +1,7 @@
 export interface Question {
   question: string;
   answers: string[];
-  correct: string;
+  correct: string[];
 }
 
 export type Language = 'ro' | 'en';
