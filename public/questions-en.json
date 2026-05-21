@@ -402,7 +402,10 @@
   {
     "question": "How do you correctly insert an external JavaScript file test.js?",
     "answers": [
-      "<script src=\"test.js\"></script>"
+      "<script src=\"test.js\"></script>",
+      "<script href=\"test.js\">",
+      "<script src=\"test.js\">",
+      "<script name=\"test.js\"></script>"
     ],
     "correct": [
       "<script src=\"test.js\"></script>"
