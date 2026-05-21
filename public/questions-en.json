@@ -254,7 +254,6 @@
       "$.ajax, $.get, load"
     ]
   },
-
   {
     "question": "JavaScript injections are due to:",
     "answers": [
