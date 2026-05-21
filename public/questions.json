@@ -139,7 +139,6 @@
     ],
     "correct": [
       "In linia de comanda folosind php.exe/php",
-      "De catre interpretatorul de comenzi al sistemului de operare",
       "De catre un modul din cadrul serverului web"
     ]
   },
